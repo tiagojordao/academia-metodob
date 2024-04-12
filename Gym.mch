@@ -4,25 +4,32 @@ CONSTANTS
     mes
 
 SETS 
-    MATRICULA;NOME;STATUS= {pago, naopago,inadiplente};TREINO={treino1,treino2,treino3,treino4}
+    MATRICULA;NOME;STATUS= {pago, naopago,inadiplente};TREINO={treino1,treino2,treino3,treino4};FREQUENCIA={true,false}
 
 PROPERTIES        
     mes =3 & card(MATRICULA) <=MAXINT 
 
 VARIABLES         
-    matriculado , statuspagamento, historicopagamento,treinando,dias
+    matriculado , statuspagamento, historicopagamento,treinando,dias,frequencia,controlefrequencia
 INVARIANT         
-matriculado: MATRICULA >+>NOME & statuspagamento:MATRICULA+->STATUS& historicopagamento:MATRICULA +->1..3 & treinando:MATRICULA+->TREINO  & dias:1..3&dias<=mes
+matriculado: MATRICULA >+>NOME 
+& statuspagamento:MATRICULA+->STATUS
+& historicopagamento:MATRICULA +->1..mes 
+& treinando:MATRICULA+->TREINO  
+& dias:1..mes 
+&dias<=mes
+&frequencia:MATRICULA-->0..mes
+&controlefrequencia: MATRICULA+->FREQUENCIA
 
 INITIALISATION    
-    matriculado:={}||statuspagamento:={}|| historicopagamento:= MATRICULA  * {1}||treinando:={}||dias:=1
+    matriculado:={}||statuspagamento:={}|| historicopagamento:= MATRICULA  * {1}||treinando:={}||dias:=1|| frequencia:=MATRICULA*{0}|| controlefrequencia:= MATRICULA*{false}
 
 OPERATIONS
 
 checking(mm)=
-   PRE mm:MATRICULA & mm/:dom(treinando) &mm: dom(matriculado)
+   PRE mm:MATRICULA & mm/:dom(treinando) &mm: dom(matriculado) &controlefrequencia(mm)=false &statuspagamento(mm)=pago
    THEN ANY tt WHERE tt:TREINO
-              THEN treinando:= treinando \/ {mm|->tt} 
+              THEN treinando:= treinando \/ {mm|->tt} ||frequencia(mm):=frequencia(mm)+1||controlefrequencia(mm):=true
 	END    
 END;
 
@@ -44,10 +51,11 @@ END;
 passardia=
 PRE  { xx,vv | xx : dom(matriculado) & vv = historicopagamento(xx) + 1 } : MATRICULA +-> 1 .. 30 & { xx,ss | xx : dom(matriculado) &  ss = naopago } : MATRICULA +-> STATUS & { xx,vv | xx : dom(matriculado) & vv = 1 } : MATRICULA +-> 1 .. 30
 THEN IF !xx. (xx: dom(historicopagamento )=> historicopagamento(xx)<mes)
-           THEN  historicopagamento:= {xx,vv | xx: dom(matriculado) & vv=historicopagamento(xx)+1 } || dias:=dias+1
+           THEN  historicopagamento:= {xx,vv | xx: dom(matriculado) & vv=historicopagamento(xx)+1 } || dias:=dias+1 || controlefrequencia:={xx,vv | xx: dom(frequencia) & vv=false }
            ELSE  IF #xx. (xx: dom(historicopagamento )  => historicopagamento(xx)=mes)
-                      THEN statuspagamento:= {xx,ss| xx:dom(matriculado) &  ss=naopago} ||  historicopagamento:= {xx,vv | xx: dom(matriculado) & historicopagamento(xx)=mes&vv=1+dias-historicopagamento(xx)}|| dias:=1
-	     END
+                      THEN statuspagamento:= {xx,ss| xx:dom(matriculado) &  ss=naopago} ||  historicopagamento:= {xx,vv | xx: dom(matriculado) & historicopagamento(xx)=mes&vv=1+dias-historicopagamento(xx)}|| dias:=1||controlefrequencia:={xx,vv | xx: dom(frequencia) & vv=false }
+
+  	  END
            END
 END;
 
