@@ -20,7 +20,7 @@ PROPERTIES
     serie=seq( TIPO*max_series*NAT1*NAT1*UNIDADE)
     
 VARIABLES       
-    matriculado, statuspagamento, historicopagamento ,treinando, frequencia, controlefrequencia,treinos
+    matriculado, statuspagamento, historicopagamento ,treinando, frequencia, controlefrequencia,treinos,dia
     
 INVARIANT       
     matriculado: MATRICULA >+>NOME
@@ -30,10 +30,11 @@ INVARIANT
     &frequencia: MATRICULA --> 0..mes
     &controlefrequencia: MATRICULA +-> FREQUENCIA
     & treinos:MATRICULA*DIAS +-> serie
+    & dia<:DIAS
 
     
 INITIALISATION  
-    matriculado := {} || statuspagamento := {} || historicopagamento := MATRICULA *{1} || treinando := {}|| frequencia := MATRICULA*{0} || controlefrequencia := MATRICULA*{false}||treinos:={}
+    matriculado := {} || statuspagamento := {} || historicopagamento := MATRICULA *{1} || treinando := {}|| frequencia := MATRICULA*{0} || controlefrequencia := MATRICULA*{false}||treinos:={}||dia:={}
     
 OPERATIONS
     
@@ -95,7 +96,7 @@ OPERATIONS
 
 addtreino(pp,dd,ss)=
     PRE pp: MATRICULA & dd:DIAS &ss:serie &matriculado(pp)/:{}
-    THEN treinos:=treinos \/ (pp,dd,seq(ss))//{xx,yy,zz|xx:MATRICULA &yy:DIAS &zz=ss}
+    THEN treinos:=treinos \/{xx,yy,zz|xx:MATRICULA &yy:dia &zz=ss &yy=dd&xx=pp}
     END;
 removertreino(pp,dd)=
 PRE pp:MATRICULA &dd:DIAS&matriculado(pp)/:{}&treinos(pp,dd)/:{}
