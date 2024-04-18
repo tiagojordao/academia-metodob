@@ -4,10 +4,20 @@ CONSTANTS
     mes,max_series,serie
     
 SETS
-    MATRICULA; NOME ;STATUS = {pago, naopago,inadiplente}; TREINO = {treino1,treino2,treino3,treino4}; FREQUENCIA = {true,false} ; DIA={seg,ter,quar,quin,sex,sab,domi};UNIDADE={kg,minuto};TIPO={Agachamento, Supino, Barrafixa, Puxadanapolia, Elevacaolateral, Remada, Cadeiraextensora, Abdominalcrunch, Flexaodebraço, Legpress} 
+    MATRICULA; 
+    NOME ;
+    STATUS = {pago, naopago,inadiplente}; 
+    TREINO = {treino1,treino2,treino3,treino4};
+    FREQUENCIA = {true,false} ; 
+    DIAS={seg,ter,quar,quin,sex,sab,domi};
+    UNIDADE={kg,minuto};
+    TIPO={Agachamento, Supino, Barrafixa}//, Puxadanapolia, Elevacaolateral, Remada, Cadeiraextensora, Abdominalcrunch, Flexaodebraço, Legpress} 
     
 PROPERTIES      
-    mes = 3 & card(MATRICULA) <= MAXINT&max_series=1..15 & serie= TIPO*max_series*NAT1*NAT1*UNIDADE
+    mes = 3 & 
+    card(MATRICULA) <= MAXINT&
+    max_series=1..15 & 
+    serie=seq( TIPO*max_series*NAT1*NAT1*UNIDADE)
     
 VARIABLES       
     matriculado, statuspagamento, historicopagamento ,treinando, frequencia, controlefrequencia,treinos
@@ -19,8 +29,8 @@ INVARIANT
     & treinando: MATRICULA +-> TREINO
     &frequencia: MATRICULA --> 0..mes
     &controlefrequencia: MATRICULA +-> FREQUENCIA
-    & treinos:MATRICULA*DIA +->serie
-    
+    & treinos:MATRICULA*DIAS +-> serie
+
     
 INITIALISATION  
     matriculado := {} || statuspagamento := {} || historicopagamento := MATRICULA *{1} || treinando := {}|| frequencia := MATRICULA*{0} || controlefrequencia := MATRICULA*{false}||treinos:={}
@@ -81,6 +91,16 @@ OPERATIONS
     THEN IF mm : dom(statuspagamento)
         THEN rr := statuspagamento(mm)
         END
-    END
+    END;
+
+addtreino(pp,dd,ss)=
+    PRE pp: MATRICULA & dd:DIAS &ss:serie &matriculado(pp)/:{}
+    THEN treinos:=treinos \/ (pp,dd,seq(ss))//{xx,yy,zz|xx:MATRICULA &yy:DIAS &zz=ss}
+    END;
+removertreino(pp,dd)=
+PRE pp:MATRICULA &dd:DIAS&matriculado(pp)/:{}&treinos(pp,dd)/:{}
+THEN treinos(pp,dd):={}
+END
+
 END
 
