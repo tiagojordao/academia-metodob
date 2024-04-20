@@ -1,7 +1,7 @@
 MACHINE Gym
     
 CONSTANTS       
-    mes,max_series,serie
+    mes,max_series,max_rep,max_peso,serie
     
 SETS
     MATRICULA; 
@@ -9,15 +9,17 @@ SETS
     STATUS = {pago, naopago,inadiplente}; 
     TREINO = {treino1,treino2,treino3,treino4};
     FREQUENCIA = {true,false} ; 
-    DIAS={seg,ter,quar,quin,sex,sab,domi};
+    DIAS={seg,ter,quar,quin};//,sex,sab,domi};
     UNIDADE={kg,minuto};
     TIPO={Agachamento, Supino, Barrafixa}//, Puxadanapolia, Elevacaolateral, Remada, Cadeiraextensora, Abdominalcrunch, Flexaodebraço, Legpress} 
     
 PROPERTIES      
     mes = 3 & 
     card(MATRICULA) <= MAXINT&
-    max_series=1..15 & 
-    serie=seq( TIPO*max_series*NAT1*NAT1*UNIDADE)
+    max_series=1..1 &
+   max_rep=1..1&
+   max_peso=1..1&
+    serie=seq( TIPO*max_series*max_rep*max_peso*UNIDADE)
     
 VARIABLES       
     matriculado, statuspagamento, historicopagamento ,treinando, frequencia, controlefrequencia,treinos,dia
@@ -95,13 +97,20 @@ OPERATIONS
     END;
 
 addtreino(pp,dd,ss)=
-    PRE pp: MATRICULA & dd:DIAS &ss:serie &matriculado(pp)/:{}
-    THEN treinos:=treinos \/{xx,yy,zz|xx:MATRICULA &yy:dia &zz=ss &yy=dd&xx=pp}
+    PRE pp: MATRICULA & dd:DIAS &ss:serie &matriculado(pp)/:{} 
+
+    THEN treinos:= treinos\/{pp |-> dd |-> ss}
     END;
+
 removertreino(pp,dd)=
-PRE pp:MATRICULA &dd:DIAS&matriculado(pp)/:{}&treinos(pp,dd)/:{}
-THEN treinos(pp,dd):={}
-END
+    PRE pp:MATRICULA &dd:DIAS &matriculado(pp)/:{}&
+        (pp |-> dd) : dom(treinos)
+    THEN treinos := treinos -{xx, vv | xx: dom(treinos) & xx=pp|->dd&vv=treinos(pp|->dd)}
+    END
 
 END
+
+
+
+
 
