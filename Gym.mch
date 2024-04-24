@@ -42,7 +42,7 @@ INVARIANT
     & treinando: MATRICULA +-> TREINO  // o treino em andamento está associado a cada matrícula
     & frequencia: MATRICULA --> 0..mes  // a frequência está associada a cada matrícula e é um número entre 0 e o máximo de dias de um mês
     & controlefrequencia: MATRICULA +-> FREQUENCIA  // o controle de frequência está associado a cada matrícula
-    & treinos:MATRICULA*DIAS <-> serie  // os treinos agendados estão associados a cada matrícula e a cada dia da semana
+    & treinos:(MATRICULA*DIAS)<->serie  // os treinos agendados estão associados a cada matrícula e a cada dia da semana
     & dia <: DIAS  // o dia é um subconjunto de dias da semana
     
 INITIALISATION  
@@ -135,12 +135,6 @@ OPERATIONS
         END
     END;
 
-    aux <-- auxiliar =
-    PRE 1=1
-    THEN aux:= statuspagamento
-    END;
-
-
     addTreino(person, day, type, maxSeries, maxRep, maxWeight, unit) =
         PRE person: MATRICULA
             & day: DIAS
@@ -164,7 +158,7 @@ OPERATIONS
             & unit: UNIDADE
             & matriculado(person)/: {}
             & (person |-> day): dom(treinos)
-        THEN treinos := treinos <+ {(person, day) |-> (treinos(person |-> day) \/ [(type, maxSeries, maxRep, maxWeight, unit)])}
+        THEN treinos := treinos \/{(person, day) |->  [(type, maxSeries, maxRep, maxWeight, unit)]}
         // treinos:= treinos \/ {(person, day) |-> [(type, maxSeries, maxRep, maxWeight, unit)]}
     END;
 
@@ -173,7 +167,8 @@ OPERATIONS
             & dd: DIAS
             & matriculado(pp)/: {}
             & (pp |-> dd) : dom(treinos)
-        THEN treinos := treinos - {xx, vv | xx: dom(treinos) & xx=pp |-> dd & vv=treinos(pp|->dd)}
+        THEN treinos:=treinos-({pp|->dd} <| treinos)
+	//treinos(pp|->dd) := {}//(treinos - {xx, vv | xx: dom(treinos) & xx=pp |-> dd & vv=treinos(pp|->dd)})
     END;
 
     removeExercicio(pp,dd,ss) =
