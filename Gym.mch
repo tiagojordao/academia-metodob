@@ -42,7 +42,7 @@ INVARIANT
     & treinando: MATRICULA +-> TREINO  // o treino em andamento está associado a cada matrícula
     & frequencia: MATRICULA --> 0..mes  // a frequência está associada a cada matrícula e é um número entre 0 e o máximo de dias de um mês
     & controlefrequencia: MATRICULA +-> FREQUENCIA  // o controle de frequência está associado a cada matrícula
-    & treinos:(MATRICULA*DIAS)<->serie  // os treinos agendados estão associados a cada matrícula e a cada dia da semana
+    & treinos:MATRICULA*DIAS <-> serie  // os treinos agendados estão associados a cada matrícula e a cada dia da semana
     & dia <: DIAS  // o dia é um subconjunto de dias da semana
     
 INITIALISATION  
@@ -112,72 +112,70 @@ OPERATIONS
     END;
 
     pagar(mm) =
-    PRE mm:MATRICULA 
-        & mm: dom(statuspagamento) 
-        & statuspagamento <+ {mm |-> pago} : MATRICULA +-> STATUS
-        & statuspagamento(mm) /= pago
-    THEN statuspagamento(mm):= pago || historicopagamento(mm) := 1
+    PRE mm:MATRICULA  // Verifica se o número de matrícula é válido
+        & mm: dom(statuspagamento)  // Verifica se o cliente está matriculado
+        & statuspagamento <+ {mm |-> pago} : MATRICULA +-> STATUS  // Verifica se o status de pagamento pode ser atualizado para pago
+        & statuspagamento(mm) /= pago  // Verifica se o cliente não está com o status de pagamento como pago
+    THEN statuspagamento(mm):= pago || historicopagamento(mm) := 1  // Atualiza o status de pagamento do cliente para pago e inicia contagem de novo mês
     END;
     
     dd <-- queryDay(mm) =
-        PRE mm:MATRICULA
-            & mm: dom(matriculado)
-            & mm:dom(historicopagamento)
-        THEN dd:= historicopagamento(mm)
+        PRE mm:MATRICULA  // Verifica se o número de matrícula é válido
+            & mm: dom(matriculado)  // Verifica se o cliente está matriculado
+            & mm:dom(historicopagamento)  // Verifica se o histórico de pagamento do cliente está definido
+        THEN dd:= historicopagamento(mm)  // Retorna o dia de pagamento do cliente
     END;
     
     rr <-- pagamentQuery(mm) =
-        PRE mm : MATRICULA
-            & mm: dom(matriculado)
+        PRE mm : MATRICULA  // Verifica se o número de matrícula é válido
+            & mm: dom(matriculado)  // Verifica se o cliente está matriculado
         THEN 
-            IF mm : dom(statuspagamento)
-                THEN rr := statuspagamento(mm)
+            IF mm : dom(statuspagamento)  // Verifica se o status de pagamento do cliente está definido
+                THEN rr := statuspagamento(mm)  // Retorna o status de pagamento do cliente
         END
     END;
 
     addTreino(person, day, type, maxSeries, maxRep, maxWeight, unit) =
-        PRE person: MATRICULA
-            & day: DIAS
-            & type: TIPO
-            & maxSeries: max_series
-            & maxRep: max_rep
-            & maxWeight: max_peso
-            & unit: UNIDADE
-            & person: dom(matriculado)
-            & (person |-> day)/: dom(treinos)
-        THEN treinos:= treinos \/ {(person, day) |-> [(type, maxSeries, maxRep, maxWeight, unit)]}
+        PRE person: MATRICULA  // Verifica se o número de matrícula(person) é válido
+            & day: DIAS  // Verifica se o dia é válido
+            & type: TIPO  // Verifica se o tipo de treino é válido
+            & maxSeries: max_series  // Verifica se o número máximo de séries é válido
+            & maxRep: max_rep  // Verifica se o número máximo de repetições é válido
+            & maxWeight: max_peso  // Verifica se o peso máximo é válido
+            & unit: UNIDADE  // Verifica se a unidade de peso é válida
+            & person: dom(matriculado)  // Verifica se o cliente está matriculado
+            & (person |-> day)/: dom(treinos)  // Verifica se o cliente já tem um treino agendado para o dia especificado
+        THEN treinos:= treinos \/ {(person, day) |-> [(type, maxSeries, maxRep, maxWeight, unit)]}  // Adiciona um novo treino para o cliente no dia especificado
     END;
 
     addExercicio(person, day, type, maxSeries, maxRep, maxWeight, unit) =
-        PRE person: MATRICULA
-            & day: DIAS
-            & type: TIPO
-            & maxSeries: max_series
-            & maxRep: max_rep
-            & maxWeight: max_peso
-            & unit: UNIDADE
-            & matriculado(person)/: {}
-            & (person |-> day): dom(treinos)
-        THEN treinos := treinos \/{(person, day) |->  [(type, maxSeries, maxRep, maxWeight, unit)]}
-        // treinos:= treinos \/ {(person, day) |-> [(type, maxSeries, maxRep, maxWeight, unit)]}
+        PRE person: MATRICULA  // Verifica se o número de matrícula é válido
+            & day: DIAS  // Verifica se o dia é válido
+            & type: TIPO  // Verifica se o tipo de treino é válido
+            & maxSeries: max_series  // Verifica se o número máximo de séries é válido
+            & maxRep: max_rep  // Verifica se o número máximo de repetições é válido
+            & maxWeight: max_peso  // Verifica se o peso máximo é válido
+            & unit: UNIDADE  // Verifica se a unidade de peso é válida
+            & matriculado(person)/: {}  // Verifica se o cliente está matriculado
+            & (person |-> day): dom(treinos)  // Verifica se o cliente já tem um treino agendado para o dia especificado, caso tenha, não será possível utilizar addExercicio
+        THEN treinos:= treinos \/ {(person, day) |-> [(type, maxSeries, maxRep, maxWeight, unit)]}  // Adiciona um novo exercício à lista de exercícios do cliente no dia especificado
     END;
 
-    removeTreino(pp,dd) =
-        PRE pp: MATRICULA
-            & dd: DIAS
-            & matriculado(pp)/: {}
-            & (pp |-> dd) : dom(treinos)
-        THEN treinos:=treinos-({pp|->dd} <| treinos)
-	//treinos(pp|->dd) := {}//(treinos - {xx, vv | xx: dom(treinos) & xx=pp |-> dd & vv=treinos(pp|->dd)})
+    removerTreino(pp,dd) =
+        PRE pp: MATRICULA  // Verifica se o número de matrícula é válido
+            & dd: DIAS  // Verifica se o dia é válido
+            & matriculado(pp)/: {}  // Verifica se o cliente está matriculado
+            & (pp |-> dd) : dom(treinos)  // Verifica se o cliente tem um treino agendado para o dia especificado
+        THEN treinos:=treinos-({pp|->dd} <| treinos)  // Remove o treino do cliente no dia especificado
     END;
 
-    removeExercicio(pp,dd,ss) =
-        PRE pp: MATRICULA
-            & dd:DIAS
-            & ss:serie
-            & matriculado(pp)/:{}
-            & {pp|->dd|->ss} /\treinos /= {}
-        THEN treinos:=treinos-{pp|->dd|->ss} 
+    removerExercicio(pp,dd,ss) =
+        PRE pp: MATRICULA  // Verifica se o número de matrícula é válido
+            & dd:DIAS  // Verifica se o dia é válido
+            & ss:serie  // Verifica se a série de exercícios é válida
+            & matriculado(pp)/:{}  // Verifica se o cliente está matriculado
+            & {pp|->dd|->ss} /\ treinos /= {}  // Verifica se o cliente tem um treino agendado para o dia especificado e com a série de exercícios especificada
+        THEN treinos:=treinos-{pp|->dd|->ss}  // Remove a série de exercícios do treino do cliente no dia especificado
     END
 
 
